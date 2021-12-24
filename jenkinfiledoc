@@ -1,0 +1,26 @@
+node{
+    buildNumber = BUILD_NUMBER
+    properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), pipelineTriggers([githubPush()])])
+    stage("get code"){
+        git 'https://github.com/pnr-do-project-august/java-web-app-docker.git'
+    }
+    stage("build"){
+        def mavenHome = tool name: "maven",typr: "maven"
+        sh "${mavenHome}/bin/mvn clean package"
+    }
+    stage("docker build"){
+        sh "docker build -t nagesh447/java-web-apps:${buildNumber} ."
+    }
+    stage("docker deploy"){
+        withCredentials([string(credentialsId: 'Docker_pwd', variable: 'docker_cred')]) {
+        sh "docker login -u nagesh447 -p ${docker_cred} "
+        }
+        sh "docker push nagesh447/java-web-apps:${buildNumber}"
+    }
+    stage("deployment to container"){
+        sshagent(['deply']) {
+        sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.41.72 docker rm -f javawebcont || true"
+        sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.41.72 docker run -d --name javawebcont -p 8080:8080 nagesh447/java-web-apps:${buildNumber}"
+        }
+    }
+}
