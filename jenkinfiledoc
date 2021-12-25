@@ -9,7 +9,7 @@ node{
         sh "${mavenHome}/bin/mvn clean package"
     }
     stage("docker build"){
-        sh "docker rmi $(docker images -q)"
+        sh "docker rmi '$(docker images -q)'"
         sh "docker build -t nagesh447/java-web-apps:${buildNumber} ."
     }
     stage("docker deploy"){
